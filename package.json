@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "@upstash/redis": "^1.34.3",
-    "node-ical": "^0.20.1"
+    "node-ical": "^0.20.1",
+    "redis": "^4.7.0"
   },
   "private": true,
   "type": "module",

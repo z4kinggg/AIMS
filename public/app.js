@@ -226,7 +226,7 @@ $('settingsBtn').onclick = async () => {
     const items = [
       `EPITA: ${s.zeus.configured ? (s.zeus.ok ? `${s.zeus.count} classes, updated ${ago(s.zeus.fetchedAt)}` : `problem – ${s.zeus.error}`) : 'Zeus link not set yet'}`,
       `EM Normandie: ${s.emn.count} classes, updated ${ago(s.emn.updatedAt)}`,
-      `Storage: ${s.storage === 'redis' ? 'database connected' : s.storage === 'file' ? 'local file (dev mode)' : 'no database – add Upstash Redis'}`,
+      `Storage: ${s.storage === 'redis' ? 'database connected' : s.storage === 'file' ? 'local file (dev mode)' : `no database found${s.storageSettings?.length ? ` (server sees: ${s.storageSettings.join(', ')})` : ' – connect it in Vercel → Storage, then redeploy'}`}`,
     ];
     $('statusList').innerHTML = items.map((t) => `<li>${esc(t)}</li>`).join('');
   } catch (e) { toast(e.message); }

@@ -88,7 +88,7 @@ Class names start with `[EPITA]` or `[EMN]`.
 |---|---|
 | Login says *APP_PASSWORD is not set* | Add it in Vercel → Settings → Environment Variables, then redeploy. |
 | "EPITA: not syncing" | The Zeus link is wrong or has expired. Copy it again (step 3). |
-| *No database connected* | Do step 4. |
+| *No database connected* | Do step 4. If the database is already connected, **redeploy**: the site only sees the database after a new deployment. Settings → Sync status lists the database settings the server can see. |
 | Add-on says *rejected that sync key* | Copy the sync key again from the site's Settings. It changes if you change `APP_PASSWORD`. |
 | Add-on never shows ✓ on MyEMN | Check the MyEMN address field (step 5.4). If it still fails, open `https://<your-site>/api/status?raw=1` while logged in, or send a copy of MyEMN's `schedule?startDate=…` response from DevTools → Network, so the reader can be adjusted to MyEMN's exact format. |
 | EM Normandie classes at the wrong time | Send a sample as above. Times without a time zone are read as Paris time. |
