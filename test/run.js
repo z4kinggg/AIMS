@@ -75,6 +75,31 @@ test('MyEMN data is read from several possible shapes', () => {
   assert.equal(room({ resources: [{ type: 'TEACHER', name: 'T' }, { type: 'ROOM', name: 'B103' }] }), 'B103');
 });
 
+test('Real MyEMN format: name, room from locations, teacher, notes', () => {
+  const sample = { personalEvents: [], sessions: [], activities: [
+    { type: 'Activity', teamsLink: 'https://teams.microsoft.com/l/meetup-join/test', zoomLink: null, moodleLink: null, teacher: 'DURAND Muriel',
+      interventionPlace: 'NotSet', interventionPlaceAddress: '', moreInfo: '', id: '210206',
+      start: '2026-12-01T12:30:00Z', end: '2026-12-01T15:30:00Z', label: 'Working In A Multicultural Environment',
+      description: 'Course summary.', locations: [{ libelle: 'Salle 209', code: 'PA_R02_008' }] },
+    { type: 'Activity', teamsLink: null, teacher: 'BOURAGA Sarah', interventionPlace: 'NotSet', interventionPlaceAddress: '', moreInfo: 'Bring a laptop',
+      id: '211499', start: '2027-01-11T08:00:00Z', end: '2027-01-11T11:30:00Z', label: 'Project Management Principles', description: '', locations: [] },
+    { type: 'Activity', teamsLink: 'javascript:alert(1)', id: '1', start: '2027-01-12T08:00:00Z', end: '2027-01-12T09:00:00Z', label: 'X', locations: [{ libelle: 'Salle 101' }, { libelle: 'Salle 102' }] },
+  ] };
+  const [a, b, c] = parseEmn(sample);
+  assert.equal(a.id, 'emn:210206');
+  assert.equal(a.title, 'Working In A Multicultural Environment');
+  assert.equal(a.location, 'Salle 209');
+  assert.equal(a.teacher, 'DURAND Muriel');
+  assert.equal(a.start, '2026-12-01T12:30:00.000Z');
+  assert.equal(a.description, 'Course summary.');
+  assert.equal(b.location, '');
+  assert.equal(b.description, 'Bring a laptop');
+  assert.equal(c.location, 'Salle 101, Salle 102');
+  const range = rangeFromUrl('https://apim-emn-prod.azure-api.net/bff/api/users/me/schedule?startDate=2026-05-31T22%3A00%3A00.000Z&endDate=2027-04-30T21%3A59%3A59.999Z');
+  assert.equal(range.start, '2026-05-31T22:00:00.000Z');
+  assert.equal(range.end, '2027-04-30T21:59:59.999Z');
+});
+
 test('A new MyEMN week replaces that week only (cancelled classes disappear)', () => {
   const old = [
     { id: 'emn:1', start: '2026-10-20T08:00:00.000Z', end: '2026-10-20T10:00:00.000Z' },
