@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Timetable Sync</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 0; padding: 16px; min-width: 320px; max-width: 460px; }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  p { color: #64748b; margin: 4px 0 12px; }
+  label { display: block; font-size: 12px; color: #64748b; margin: 10px 0 4px; }
+  input { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
+  button { margin-top: 14px; font: inherit; padding: 8px 14px; border-radius: 8px; border: 0; background: #0f172a; color: #fff; cursor: pointer; }
+  #status { margin-top: 12px; font-size: 13px; }
+  .ok { color: #15803d; } .bad { color: #b91c1c; }
+</style>
+</head>
+<body>
+  <h1>Timetable Sync</h1>
+  <p>Copy both values from your calendar site → Settings. Then open your MyEMN timetable: each week you view is sent to your calendar.</p>
+  <label for="siteUrl">Site address</label>
+  <input id="siteUrl" placeholder="https://your-calendar.vercel.app">
+  <label for="syncKey">Sync key</label>
+  <input id="syncKey" placeholder="32 characters">
+  <label for="extraHost">MyEMN address, only if it isn't on em-normandie.com / .fr</label>
+  <input id="extraHost" placeholder="e.g. myemn.example.com">
+  <button id="save">Save</button>
+  <div id="status"></div>
+  <script src="options.js"></script>
+</body>
+</html>

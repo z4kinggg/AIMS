@@ -1,0 +1,4 @@
+{
+  "rewrites": [{ "source": "/feed.ics", "destination": "/api/feed" }],
+  "functions": { "api/*.js": { "maxDuration": 15 } }
+}

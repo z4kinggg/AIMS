@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <title>My Timetable</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='5' width='26' height='24' rx='5' fill='%232563eb'/><rect x='3' y='5' width='26' height='7' rx='3' fill='%23be123c'/><circle cx='11' cy='19' r='2.4' fill='white'/><circle cx='21' cy='19' r='2.4' fill='white'/></svg>">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/luxon3@6.1.15/index.global.min.js"></script>
+</head>
+<body>
+  <!-- Login -->
+  <section id="login" class="login" hidden>
+    <form id="loginForm" class="card login-card">
+      <h1>My Timetable</h1>
+      <p class="muted">EPITA + EM Normandie in one place.</p>
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required autofocus>
+      <p id="loginError" class="error" hidden></p>
+      <button class="btn primary" type="submit">Open</button>
+    </form>
+  </section>
+
+  <!-- App -->
+  <div id="app" hidden>
+    <header class="top">
+      <div class="brand">
+        <h1>My Timetable</h1>
+        <div class="legend">
+          <span class="chip zeus"><i></i>EPITA <small id="zeusStatus"></small></span>
+          <span class="chip emn"><i></i>EM Normandie <small id="emnStatus"></small></span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="refreshBtn" title="Fetch the latest EPITA timetable now">Refresh</button>
+        <button class="btn" id="hiddenBtn">Hidden <span id="hiddenCount" class="badge">0</span></button>
+        <button class="btn" id="settingsBtn">Settings</button>
+      </div>
+    </header>
+    <div id="banner" class="banner" hidden></div>
+    <main class="cal-wrap"><div id="calendar"></div></main>
+  </div>
+
+  <!-- Class details -->
+  <dialog id="eventDialog" class="dialog">
+    <form method="dialog">
+      <div class="dialog-head">
+        <span id="evSchool" class="pill"></span>
+        <button class="icon-btn" value="close" aria-label="Close">✕</button>
+      </div>
+      <h2 id="evTitle"></h2>
+      <dl class="details">
+        <dt>When</dt><dd id="evWhen"></dd>
+        <dt>Room</dt><dd id="evRoom"></dd>
+        <dt>Teacher</dt><dd id="evTeacher"></dd>
+        <dt>Group</dt><dd id="evGroup"></dd>
+      </dl>
+      <pre id="evDesc" class="desc"></pre>
+      <div id="evActions" class="stack"></div>
+    </form>
+  </dialog>
+
+  <!-- Hidden classes -->
+  <dialog id="hiddenDialog" class="dialog">
+    <form method="dialog">
+      <div class="dialog-head"><h2>Hidden classes</h2><button class="icon-btn" value="close" aria-label="Close">✕</button></div>
+      <p class="muted">Hide classes for groups you're not in. A text rule hides every class whose title, group or details contain that word, e.g. <code>GR2</code>.</p>
+      <div class="row">
+        <input id="ruleText" placeholder="Text to hide, e.g. GR2">
+        <select id="ruleSource" aria-label="School">
+          <option value="any">Both schools</option><option value="zeus">EPITA</option><option value="emn">EM Normandie</option>
+        </select>
+        <button class="btn primary" id="addRuleBtn" type="button">Add</button>
+      </div>
+      <ul id="ruleList" class="rule-list"></ul>
+      <label class="check"><input type="checkbox" id="showHidden"> Show hidden classes faded on the calendar</label>
+    </form>
+  </dialog>
+
+  <!-- Settings -->
+  <dialog id="settingsDialog" class="dialog">
+    <form method="dialog">
+      <div class="dialog-head"><h2>Settings</h2><button class="icon-btn" value="close" aria-label="Close">✕</button></div>
+      <h3>Phone calendar</h3>
+      <p class="muted">Subscribe to this link in Apple Calendar, Google Calendar or Outlook. It updates on its own and leaves out hidden classes.</p>
+      <div class="copy"><input id="feedUrl" readonly><button class="btn" type="button" data-copy="feedUrl">Copy</button></div>
+      <h3>Browser add-on (EM Normandie)</h3>
+      <p class="muted">Paste these two values into the add-on's options.</p>
+      <label>Site address</label>
+      <div class="copy"><input id="siteUrl" readonly><button class="btn" type="button" data-copy="siteUrl">Copy</button></div>
+      <label>Sync key</label>
+      <div class="copy"><input id="syncKey" readonly><button class="btn" type="button" data-copy="syncKey">Copy</button></div>
+      <h3>Sync status</h3>
+      <ul id="statusList" class="status-list"></ul>
+      <button class="btn danger" id="logoutBtn" type="button">Log out on this device</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>

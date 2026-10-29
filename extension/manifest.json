@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Timetable Sync (MyEMN)",
+  "version": "1.0.0",
+  "description": "Copies your MyEMN timetable to your own unified calendar when you open it. Never reads or stores your password.",
+  "permissions": ["storage", "scripting"],
+  "host_permissions": ["https://*.vercel.app/*"],
+  "optional_host_permissions": ["https://*/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://*.em-normandie.com/*", "https://*.em-normandie.fr/*"],
+      "js": ["inject.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    },
+    {
+      "matches": ["https://*.em-normandie.com/*", "https://*.em-normandie.fr/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "options_page": "options.html",
+  "action": { "default_title": "Timetable Sync", "default_popup": "options.html" }
+}
