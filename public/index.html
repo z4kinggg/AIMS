@@ -12,13 +12,15 @@
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon.svg">
   <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preload" href="/logos/epita.webp" as="image">
+  <link rel="preload" href="/logos/emn.webp" as="image">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <!-- Login -->
   <section id="login" class="screen center" hidden>
     <form id="loginForm" class="panel narrow">
-      <div class="logo" aria-hidden="true"><span></span><span></span></div>
+      <div class="brand-logos"><img src="/logos/epita.webp" alt="EPITA" width="84" height="57"><span aria-hidden="true">+</span><img src="/logos/emn.webp" alt="EM Normandie" width="57" height="57" class="emn"></div>
       <h1>My Timetable</h1>
       <p class="muted">EPITA and EM Normandie classes in one place.</p>
       <label for="pw">Class password</label>
@@ -31,6 +33,7 @@
   <!-- First visit: pick French group -->
   <section id="onboard" class="screen center" hidden>
     <div class="panel narrow">
+      <div class="brand-logos small"><img src="/logos/epita.webp" alt="EPITA" width="59" height="40"><span aria-hidden="true">+</span><img src="/logos/emn.webp" alt="EM Normandie" width="40" height="40" class="emn"></div>
       <h1>Your French group</h1>
       <p class="muted">Classes for the other French groups will be hidden. You can change this later in <b>Me</b>.</p>
       <div class="group-grid" id="onboardGroups"></div>

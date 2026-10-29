@@ -2,6 +2,8 @@ import { FRENCH_GROUPS, hiddenReason, matchesRule, frenchGroupOf } from './share
 
 const TZ = 'Europe/Paris';
 const SCHOOL = { zeus: 'EPITA', emn: 'EM Normandie' };
+const LOGO = { zeus: '/logos/epita.webp', emn: '/logos/emn.webp' };
+const logo = (src, cls = '') => `<img class="logo-img ${src} ${cls}" src="${LOGO[src]}" alt="" width="${src === 'zeus' ? 30 : 20}" height="20" decoding="async">`;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -245,7 +247,7 @@ function card(e) {
   return `<button type="button" class="card ${e.source}${live ? ' now' : ''}${past ? ' past' : ''}${e.reason ? ' hidden-ev' : ''}" data-id="${esc(e.id)}">
     <div class="time"><b>${hhmm(e.start)}</b><span>${hhmm(e.end)}</span></div>
     <div class="body">
-      <div class="school">${SCHOOL[e.source]} ${tag}</div>
+      <div class="school">${logo(e.source)}<span>${SCHOOL[e.source]}</span> ${tag}</div>
       <div class="title">${esc(e.title)}</div>
       <div class="meta">${e.location ? `<span>${ICON.pin}${esc(e.location)}</span>` : ''}${e.teacher ? `<span>${ICON.person}${esc(e.teacher)}</span>` : ''}</div>
     </div>
@@ -324,7 +326,7 @@ function openEvent(e) {
   if (!e) return;
   const fg = frenchGroupOf(e);
   const when = `${fmtKey(dayKey(e.start), { weekday: 'long', day: 'numeric', month: 'long' })}`;
-  let html = `<span class="pill ${e.source}">${SCHOOL[e.source]}</span><h2 id="sheetTitle">${esc(e.title)}</h2>
+  let html = `<div class="sheet-school">${logo(e.source, 'lg')}<span class="pill ${e.source}">${SCHOOL[e.source]}</span></div><h2 id="sheetTitle">${esc(e.title)}</h2>
     <div class="facts">
       <div class="fact">${ICON.clock}<div>${hhmm(e.start)} – ${hhmm(e.end)} <small>${when} · ${duration(Date.parse(e.end) - Date.parse(e.start))}</small></div></div>
       ${e.location ? `<div class="fact">${ICON.pinF}<div>${esc(e.location)}<small>Room</small></div></div>` : ''}
@@ -420,8 +422,8 @@ function renderMe() {
     <section class="section">
       <h2>Updates</h2>
       <div class="rows">${s ? `
-        <div class="rowi"><div class="t"><span class="status-dot ${s.zeus.ok ? '' : 'warn'}"></span>EPITA<small>${s.zeus.ok ? `${s.zeus.count} classes · updated ${ago(s.zeus.fetchedAt)}` : esc(s.zeus.error || 'Not set up')}</small></div></div>
-        <div class="rowi"><div class="t"><span class="status-dot ${s.emn.updatedAt && Date.now() - s.emn.updatedAt < 10 * 864e5 ? '' : 'warn'}"></span>EM Normandie<small>${s.emn.count} classes · updated ${ago(s.emn.updatedAt)}</small></div></div>` : '<p class="muted">Loading…</p>'}
+        <div class="rowi"><div class="t"><div class="brand-row">${logo('zeus')}<span class="status-dot ${s.zeus.ok ? '' : 'warn'}"></span>EPITA</div><small>${s.zeus.ok ? `${s.zeus.count} classes · updated ${ago(s.zeus.fetchedAt)}` : esc(s.zeus.error || 'Not set up')}</small></div></div>
+        <div class="rowi"><div class="t"><div class="brand-row">${logo('emn')}<span class="status-dot ${s.emn.updatedAt && Date.now() - s.emn.updatedAt < 10 * 864e5 ? '' : 'warn'}"></span>EM Normandie</div><small>${s.emn.count} classes · updated ${ago(s.emn.updatedAt)}</small></div></div>` : '<p class="muted">Loading…</p>'}
       </div>
     </section>
 
