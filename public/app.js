@@ -14,7 +14,6 @@ const ls = {
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
 const state = {
-  key: ls.get('appKey', ''),
   adminKey: ls.get('adminKey', ''),
   deviceId: ls.get('deviceId') || (() => { const id = (crypto.randomUUID?.() || String(Math.random()).slice(2) + Date.now()).toLowerCase(); ls.set('deviceId', id); return id; })(),
   frenchGroup: ls.get('frenchGroup'), // number 1–12, 0 = no French, null = not chosen yet
@@ -56,10 +55,9 @@ function ago(ms) {
 async function api(path, opts = {}) {
   const r = await fetch(path, {
     ...opts,
-    headers: { 'x-app-key': state.key, 'x-admin-key': state.adminKey, 'content-type': 'application/json', ...(opts.headers || {}) },
+    headers: { 'x-admin-key': state.adminKey, 'content-type': 'application/json', ...(opts.headers || {}) },
   });
   const body = await r.json().catch(() => ({}));
-  if (r.status === 401) { logout(); throw new Error(body.error || 'Please log in again'); }
   if (!r.ok) throw new Error(body.error || `Error ${r.status}`);
   return body;
 }
@@ -102,30 +100,13 @@ function eventsFor(week, k) {
 
 // ---------- Screens ----------
 function show(id) {
-  for (const s of ['login', 'onboard', 'app']) $(s).hidden = s !== id;
+  for (const s of ['onboard', 'app']) $(s).hidden = s !== id;
 }
 
-function logout() {
-  ls.del('appKey'); ls.del('adminKey');
-  state.key = ''; state.adminKey = '';
-  show('login');
+function lockAdmin() {
+  ls.del('adminKey'); state.adminKey = '';
+  refreshStatus();
 }
-
-$('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = e.submitter; if (btn) btn.disabled = true;
-  $('loginError').hidden = true;
-  try {
-    const r = await fetch('/api/status', { headers: { 'x-app-key': $('pw').value } });
-    const body = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(body.error || 'Wrong password');
-    state.key = $('pw').value; ls.set('appKey', state.key);
-    state.status = body;
-    boot();
-  } catch (err) {
-    $('loginError').textContent = err.message; $('loginError').hidden = false;
-  } finally { if (btn) btn.disabled = false; }
-});
 
 function groupButtons(container, onPick, small = false) {
   container.innerHTML = '';
@@ -432,7 +413,7 @@ function renderMe() {
     <section class="section">
       <h2>Install</h2>
       <p class="muted" style="margin:0">On iPhone, tap Share → <b>Add to Home Screen</b> to open this like an app. On Android, use the browser menu → <b>Install app</b>.</p>
-      <button class="btn danger block" id="logoutBtn" type="button">Log out on this device</button>
+      ${s?.admin ? '<button class="btn danger block" id="lockBtn" type="button">Lock admin on this device</button>' : ''}
     </section>`;
 
   groupButtons($('meGroups'), (g) => {
@@ -443,7 +424,7 @@ function renderMe() {
     state.myRules = state.myRules.filter((_, i) => i !== Number(b.dataset.unhide)); savePrefs(); renderMe();
   }));
   $('showHidden').onchange = (e) => { state.showHidden = e.target.checked; ls.set('showHidden', state.showHidden); };
-  $('logoutBtn').onclick = logout;
+  if ($('lockBtn')) $('lockBtn').onclick = () => { lockAdmin(); toast('Admin locked'); };
   view.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = async () => {
     const input = $(b.dataset.copy);
     try { await navigator.clipboard.writeText(input.value); } catch { input.select(); document.execCommand('copy'); }
@@ -461,7 +442,7 @@ function renderMe() {
     try {
       const r = await api('/api/status?raw=1');
       if (!r.emnSample) return toast('No MyEMN data received yet');
-      const txt = `${r.emn.lastRequestUrl || ''}\n${r.emnSample}`;
+      const txt = r.emnSample;
       try { await navigator.clipboard.writeText(txt); toast('Sample copied, paste it in the chat'); }
       catch { $('view').insertAdjacentHTML('beforeend', `<textarea readonly style="width:100%;height:200px">${esc(txt)}</textarea>`); }
     } catch (e) { toast(e.message); }
@@ -515,4 +496,4 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-if (state.key) boot(); else show('login');
+boot();

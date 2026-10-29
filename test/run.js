@@ -132,7 +132,7 @@ test('Phone calendar file is valid', () => {
   assert.ok(out.split('\r\n').every(l => Buffer.byteLength(l) <= 75), 'lines folded');
 });
 
-test('Whole site works end to end (login, both schools, hiding, phone feed)', async () => {
+test('Whole site works end to end (public view, both schools, hiding, phone feed)', async () => {
   const zeus = http.createServer((_q, r) => { r.setHeader('content-type', 'text/calendar'); r.end(ZEUS_ICS); }).listen(0);
   await new Promise(r => zeus.once('listening', r));
   process.env.ZEUS_ICS_URL = `http://127.0.0.1:${zeus.address().port}/ics`;
@@ -140,9 +140,10 @@ test('Whole site works end to end (login, both schools, hiding, phone feed)', as
   const app = createServer().listen(0);
   await new Promise(r => app.once('listening', r));
   const base = `http://127.0.0.1:${app.address().port}`;
-  const H = { 'x-app-key': 'test-password', 'content-type': 'application/json' };
+  const H = { 'content-type': 'application/json' };
   try {
-    assert.equal((await fetch(`${base}/api/events`)).status, 401);
+    // The site is public: no password needed to view.
+    assert.equal((await fetch(`${base}/api/events`)).status, 200);
     assert.equal((await fetch(`${base}/api/emn`, { method: 'POST', headers: { 'x-sync-key': 'bad' }, body: '{}' })).status, 401);
 
     const push = await fetch(`${base}/api/emn`, {

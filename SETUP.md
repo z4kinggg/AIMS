@@ -23,8 +23,8 @@ Setup takes about 15 minutes. You need free accounts on **GitHub** and **Vercel*
 
    | Name | Value |
    |---|---|
-   | `APP_PASSWORD` | The class password. Share it with your classmates so they can open the site. |
-   | `ADMIN_PASSWORD` | A different password, only for you. It unlocks the add-on sync key and hiding classes for everyone. |
+   | `ADMIN_PASSWORD` | A password only you know. It unlocks the add-on sync key and hiding classes for everyone. |
+   | `APP_PASSWORD` | Optional. The site is public, so nobody types it, but if it's already set, **keep it**: the add-on key and phone links are made from it, and removing it changes them. |
    | `ZEUS_ICS_URL` | Your private Zeus link (see step 3). You can add it later. |
 
 3. Click **Deploy**. You get an address like `https://my-timetable-xxxx.vercel.app`.
@@ -44,7 +44,7 @@ Keep this link private. Anyone who has it can see your timetable.
 2. Connect it to the `my-timetable` project. Vercel adds the connection settings for you.
 3. **Redeploy** once more (Deployments → ⋯ → Redeploy).
 
-Open your site and log in with your `APP_PASSWORD`. Your EPITA classes should appear, and **Me → Updates** shows when each school was last updated.
+Open your site. Your EPITA classes should appear, and **Me → Updates** shows when each school was last updated.
 
 ## 5. Install the browser add-on (EM Normandie)
 
@@ -63,7 +63,7 @@ Do this once a week, or whenever the school announces changes. The site shows wh
 
 ## 6. Share it with your classmates
 
-Send them the site address and the class password (`APP_PASSWORD`). The first time they open it, they pick their **French group (1–12)**, and the French classes of the other 11 groups disappear. They can change it any time under **Me**.
+The site is public: just send them the address. The first time they open it, they pick their **French group (1–12)**, and the French classes of the other 11 groups disappear. They can change it any time under **Me**.
 
 Each student's choices are their own:
 - **Tap a class** → *Hide this class for me* or *Hide every "…" for me*. An **Undo** button appears right away, and **Me → Hidden by you** lists everything to bring back.
@@ -80,12 +80,12 @@ Under **Me → Phone calendar**, tap **Add to iPhone / Mac Calendar** or **Add t
 
 | Problem | What to do |
 |---|---|
-| Login says *APP_PASSWORD is not set* | Add it in Vercel → Settings → Environment Variables, then redeploy. |
+| *Set ADMIN_PASSWORD on the server* | Add it in Vercel → Settings → Environment Variables, then redeploy. |
 | "EPITA: not syncing" | The Zeus link is wrong or has expired. Copy it again (step 3). |
 | *No database connected* | Do step 4. If the database is already connected, **redeploy**: the site only sees the database after a new deployment. |
 | No **Admin** section / sync key | Add `ADMIN_PASSWORD` in Vercel and redeploy, then unlock it under **Me → Admin**. |
 | A French class isn't hidden | The class name must contain *Français*, *French* or *FLE* plus a group number such as `GR3`, `Groupe 3` or `G3`. Send an example of a class name that isn't caught. |
-| Add-on says *rejected that sync key* | Copy the sync key again from the site's Settings. It changes if you change `APP_PASSWORD`. |
+| Add-on says *rejected that sync key* | Copy the sync key again from the site's Settings. It changes if you change or remove `APP_PASSWORD`. |
 | Add-on never shows ✓ on MyEMN | Check the MyEMN address field (step 5.4). If it still fails, open `https://<your-site>/api/status?raw=1` while logged in, or send a copy of MyEMN's `schedule?startDate=…` response from DevTools → Network, so the reader can be adjusted to MyEMN's exact format. |
 | EM Normandie classes at the wrong time | Send a sample as above. Times without a time zone are read as Paris time. |
 
@@ -94,7 +94,7 @@ Under **Me → Phone calendar**, tap **Add to iPhone / Mac Calendar** or **Add t
 ```bash
 npm install
 npm test                                    # 9 automated checks
-APP_PASSWORD=test ZEUS_ICS_URL=… npm run dev # http://localhost:3000, saves to .local-store.json
+ADMIN_PASSWORD=test ZEUS_ICS_URL=… npm run dev # http://localhost:3000, saves to .local-store.json
 ```
 
 - `api/`: Vercel serverless functions (`events`, `emn`, `rules`, `feed`, `status`)

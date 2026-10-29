@@ -12,11 +12,11 @@ export default async function handler(req, res) {
     storage: storageKind,
     storageSettings: storageEnvNames,
     zeus: { configured: Boolean(process.env.ZEUS_ICS_URL), ...zeus.status, count: zeus.events.length },
-    emn: { updatedAt: emn.updatedAt, count: emn.events.length, lastRequestUrl: raw?.url || null, lastReceivedAt: raw?.receivedAt || null },
+    emn: { updatedAt: emn.updatedAt, count: emn.events.length, lastRequestUrl: raw?.url || null, lastSampleCount: raw?.count ?? null, lastReceivedAt: raw?.receivedAt || null },
     feedToken: feedToken(),
     admin: checkAdmin(req),
     adminRequired: adminRequired(),
     ...(checkAdmin(req) ? { syncToken: syncToken() } : {}),
-    ...(req.query.raw === '1' && checkAdmin(req) ? { emnSample: raw?.sample || null } : {}),
+    ...(req.query.raw === '1' && checkAdmin(req) ? { emnSample: raw ? `${raw.url}\n${raw.sample}` : null } : {}),
   });
 }
