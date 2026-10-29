@@ -7,6 +7,7 @@ import path from 'node:path';
 
 process.env.LOCAL_STORE_FILE = path.join(os.tmpdir(), `cal-test-${process.pid}.json`);
 process.env.APP_PASSWORD = 'test-password';
+process.env.ADMIN_PASSWORD = 'admin-password';
 
 const { parseDate } = await import('../lib/time.js');
 const { parseZeusIcs } = await import('../lib/zeus.js');
@@ -14,6 +15,7 @@ const { parseEmn, mergeEmn, rangeFromUrl } = await import('../lib/emn.js');
 const { isHidden } = await import('../lib/rules.js');
 const { buildIcs } = await import('../lib/ics.js');
 const { feedToken, syncToken } = await import('../lib/auth.js');
+const { frenchGroupOf, hiddenReason, encodePrefs, decodePrefs } = await import('../public/shared.js');
 
 let passed = 0;
 const tests = [];
@@ -91,6 +93,32 @@ test('Hide rules: single class, title, group text (GR1 does not hide GR10)', () 
   assert.equal(isHidden(ev({ id: 'emn:9' }), [{ type: 'event', value: 'emn:9', source: 'any' }]), true);
 });
 
+test('French group is recognised in common spellings, and only for French classes', () => {
+  const g = (title, extra = {}) => frenchGroupOf({ title, group: '', description: '', ...extra });
+  assert.equal(g('Français GR3'), 3);
+  assert.equal(g('Francais - Groupe 12'), 12);
+  assert.equal(g('French G07'), 7);
+  assert.equal(g('FLE', { group: 'Gr 5' }), 5);
+  assert.equal(g('Français', { description: 'Groupe : GR2' }), 2);
+  assert.equal(g('Français (toute la promo)'), null);
+  assert.equal(g('Marketing GR3'), null);
+  assert.equal(g('Français GR13'), null);
+});
+
+test('Each student sees only their French group, plus their own hides', () => {
+  const ev = (title, id = title) => ({ id, source: 'zeus', title, group: '', description: '' });
+  const p = { frenchGroup: 3, rules: [{ type: 'title', value: 'Tutorat', source: 'any' }] };
+  assert.equal(hiddenReason(ev('Français GR3'), p), '');
+  assert.equal(hiddenReason(ev('Français GR4'), p), 'French group 4');
+  assert.equal(hiddenReason(ev('Français GR10'), p), 'French group 10');
+  assert.equal(hiddenReason(ev('Deep Learning'), p), '');
+  assert.equal(hiddenReason(ev('Tutorat'), p), 'Hidden by you');
+  assert.equal(hiddenReason(ev('Français GR4'), { frenchGroup: null }), '');
+  const rules = [{ type: 'event', value: 'zeus:a:é', source: 'zeus' }, { type: 'contains', value: 'GR2', source: 'any' }];
+  assert.deepEqual(decodePrefs(encodePrefs(rules)), rules);
+  assert.deepEqual(decodePrefs('garbage!!'), []);
+});
+
 test('Phone calendar file is valid', () => {
   const out = buildIcs(parseZeusIcs(ZEUS_ICS));
   assert.match(out, /^BEGIN:VCALENDAR\r\n/);
@@ -123,7 +151,10 @@ test('Whole site works end to end (login, both schools, hiding, phone feed)', as
     assert.equal(data.events.length, 4);
     assert.deepEqual([...new Set(data.events.map(e => e.source))].sort(), ['emn', 'zeus']);
 
-    await fetch(`${base}/api/rules`, { method: 'POST', headers: H, body: JSON.stringify({ type: 'contains', value: 'GR2' }) });
+    // A student can't hide classes for everyone; the admin can.
+    assert.equal((await fetch(`${base}/api/rules`, { method: 'POST', headers: H, body: JSON.stringify({ type: 'contains', value: 'GR2' }) })).status, 403);
+    assert.equal((await fetch(`${base}/api/status`, { headers: H }).then(r => r.json())).syncToken, undefined);
+    await fetch(`${base}/api/rules`, { method: 'POST', headers: { ...H, 'x-admin-key': 'admin-password' }, body: JSON.stringify({ type: 'contains', value: 'GR2' }) });
     data = await fetch(`${base}/api/events`, { headers: H }).then(r => r.json());
     assert.equal(data.events.length, 3);
     assert.ok(!data.events.some(e => e.title.includes('GR2')));
@@ -137,6 +168,12 @@ test('Whole site works end to end (login, both schools, hiding, phone feed)', as
     // Feed covers the last two months, so these October 2026 test classes may fall outside "now"; just check it's a calendar.
     assert.match(await feed.text(), /BEGIN:VCALENDAR/);
 
+    // Student in French group 1 saves their choice; their feed drops group 2's class.
+    const sid = 'device-1234abcd';
+    assert.equal((await fetch(`${base}/api/prefs`, { method: 'POST', headers: H, body: JSON.stringify({ id: sid, frenchGroup: 1, rules: [] }) })).status, 200);
+    assert.equal((await fetch(`${base}/api/prefs`, { method: 'POST', headers: H, body: JSON.stringify({ id: '../x', frenchGroup: 1 }) })).status, 400);
+    const prefs = JSON.parse(fs.readFileSync(process.env.LOCAL_STORE_FILE, 'utf8'))[`prefs:${sid}`];
+    assert.equal(prefs.frenchGroup, 1);
     const st = await fetch(`${base}/api/status`, { headers: H }).then(r => r.json());
     assert.equal(st.zeus.ok, true);
     assert.equal(st.emn.count, 1);

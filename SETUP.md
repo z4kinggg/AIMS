@@ -23,7 +23,8 @@ Setup takes about 15 minutes. You need free accounts on **GitHub** and **Vercel*
 
    | Name | Value |
    |---|---|
-   | `APP_PASSWORD` | A password you choose. It protects the site. |
+   | `APP_PASSWORD` | The class password. Share it with your classmates so they can open the site. |
+   | `ADMIN_PASSWORD` | A different password, only for you. It unlocks the add-on sync key and hiding classes for everyone. |
    | `ZEUS_ICS_URL` | Your private Zeus link (see step 3). You can add it later. |
 
 3. Click **Deploy**. You get an address like `https://my-timetable-xxxx.vercel.app`.
@@ -43,7 +44,7 @@ Keep this link private. Anyone who has it can see your timetable.
 2. Connect it to the `my-timetable` project. Vercel adds the connection settings for you.
 3. **Redeploy** once more (Deployments → ⋯ → Redeploy).
 
-Open your site and log in with your `APP_PASSWORD`. **Settings → Sync status** should now say *database connected*, and your EPITA classes should appear.
+Open your site and log in with your `APP_PASSWORD`. Your EPITA classes should appear, and **Me → Updates** shows when each school was last updated.
 
 ## 5. Install the browser add-on (EM Normandie)
 
@@ -53,32 +54,25 @@ Works in Chrome, Edge, Brave and Arc.
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select the **`extension`** folder from the unzipped files.
 4. Click the add-on's icon (pin it from the puzzle-piece menu first) and fill in:
-   - **Site address** and **Sync key**: copy both from your site under **Settings → Browser add-on**.
+   - **Site address** and **Sync key**: on your site, go to **Me → Admin**, enter your `ADMIN_PASSWORD`, and copy both.
    - **MyEMN address**: fill this in only if your MyEMN timetable is *not* on an `em-normandie.com` or `em-normandie.fr` address. Type just the domain, e.g. `myemn.example.com`.
 5. Click **Save**. It should say *Saved and connected*.
 6. Open your **MyEMN timetable** and click through the next few weeks. A green ✓ on the add-on icon means the classes were sent.
 
 Do this once a week, or whenever the school announces changes. The site shows when EM Normandie was last updated and turns the label red after 7 days.
 
-## 6. Hide classes that aren't yours
+## 6. Share it with your classmates
 
-Click any class to:
+Send them the site address and the class password (`APP_PASSWORD`). The first time they open it, they pick their **French group (1–12)**, and the French classes of the other 11 groups disappear. They can change it any time under **Me**.
 
-- **Hide only this one**
-- **Hide every "<class name>"** (for example the other French group)
-- **Hide everything for group X**, when the school lists a group
+Each student's choices are their own:
+- **Tap a class** → *Hide this class for me* or *Hide every "…" for me*. An **Undo** button appears right away, and **Me → Hidden by you** lists everything to bring back.
+- Hiding for **everyone** is only possible for the admin (you, after entering `ADMIN_PASSWORD` under **Me → Admin**).
+- On iPhone: Share → **Add to Home Screen** opens it like an app.
 
-You can also go to **Hidden**, type a word like `GR2` or `Tutorat B`, and every class containing that word is hidden. The match is on whole words, so `GR1` doesn't hide `GR10`. Undo any rule from the same screen. Hidden classes are also left out of the phone feed.
+## 7. Add it to your phone's calendar
 
-## 7. Add it to your phone
-
-Copy the **Phone calendar** link from **Settings**.
-
-- **iPhone:** Settings → Apps → Calendar → Calendar Accounts → Add Account → Other → **Add Subscribed Calendar** → paste the link.
-- **Google Calendar:** on a computer, open calendar.google.com → **Other calendars +** → **From URL** → paste the link. Google refreshes subscribed calendars only every few hours, so new changes can take a while to reach your phone.
-- **Outlook:** Add calendar → **Subscribe from web**.
-
-Class names start with `[EPITA]` or `[EMN]`.
+Under **Me → Phone calendar**, tap **Add to iPhone / Mac Calendar** or **Add to Google Calendar**. The link is personal: it follows your French group and your hidden classes, so you never need to add it again after changing them. Class names start with `[EPITA]` or `[EMN]`. Google refreshes subscribed calendars only every few hours.
 
 ---
 
@@ -88,7 +82,9 @@ Class names start with `[EPITA]` or `[EMN]`.
 |---|---|
 | Login says *APP_PASSWORD is not set* | Add it in Vercel → Settings → Environment Variables, then redeploy. |
 | "EPITA: not syncing" | The Zeus link is wrong or has expired. Copy it again (step 3). |
-| *No database connected* | Do step 4. If the database is already connected, **redeploy**: the site only sees the database after a new deployment. Settings → Sync status lists the database settings the server can see. |
+| *No database connected* | Do step 4. If the database is already connected, **redeploy**: the site only sees the database after a new deployment. |
+| No **Admin** section / sync key | Add `ADMIN_PASSWORD` in Vercel and redeploy, then unlock it under **Me → Admin**. |
+| A French class isn't hidden | The class name must contain *Français*, *French* or *FLE* plus a group number such as `GR3`, `Groupe 3` or `G3`. Send an example of a class name that isn't caught. |
 | Add-on says *rejected that sync key* | Copy the sync key again from the site's Settings. It changes if you change `APP_PASSWORD`. |
 | Add-on never shows ✓ on MyEMN | Check the MyEMN address field (step 5.4). If it still fails, open `https://<your-site>/api/status?raw=1` while logged in, or send a copy of MyEMN's `schedule?startDate=…` response from DevTools → Network, so the reader can be adjusted to MyEMN's exact format. |
 | EM Normandie classes at the wrong time | Send a sample as above. Times without a time zone are read as Paris time. |
@@ -97,7 +93,7 @@ Class names start with `[EPITA]` or `[EMN]`.
 
 ```bash
 npm install
-npm test                                    # 7 automated checks
+npm test                                    # 9 automated checks
 APP_PASSWORD=test ZEUS_ICS_URL=… npm run dev # http://localhost:3000, saves to .local-store.json
 ```
 
