@@ -69,6 +69,10 @@ test('MyEMN data is read from several possible shapes', () => {
   const c = parseEmn({ result: { days: [{ items: [{ dateDebut: '2026-10-28T10:00:00Z', dateFin: '2026-10-28T12:00:00Z', matiere: 'Finance' }] }] } });
   assert.equal(c[0].title, 'Finance');
   assert.equal(parseEmn({ nothing: 'here' }).length, 0);
+  const room = (extra) => parseEmn([{ startDate: '2026-11-04T09:00:00', endDate: '2026-11-04T12:00:00', title: 'X', ...extra }])[0].location;
+  assert.equal(room({ roomLabel: 'C204' }), 'C204');
+  assert.equal(room({ infos: { salle: { libelle: 'Amphi A' } } }), 'Amphi A');
+  assert.equal(room({ resources: [{ type: 'TEACHER', name: 'T' }, { type: 'ROOM', name: 'B103' }] }), 'B103');
 });
 
 test('A new MyEMN week replaces that week only (cancelled classes disappear)', () => {

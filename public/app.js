@@ -266,7 +266,7 @@ async function renderDay() {
   const evs = eventsFor(week, k), shown = evs.filter((e) => !e.reason);
   cardEvents = new Map();
   const label = k === today() ? 'Today' : k === addDays(today(), 1) ? 'Tomorrow' : fmtKey(k, { weekday: 'long' });
-  const sum = shown.length ? `${shown.length} class${shown.length > 1 ? 'es' : ''} · ${hhmm(shown[0].start)}–${hhmm(shown.at(-1).end)}` : '';
+  const sum = shown.length ? `${shown.length} class${shown.length > 1 ? 'es' : ''} · ${hhmm(shown[0].start)}–${hhmm(shown.reduce((m, e) => (e.end > m ? e.end : m), shown[0].end))}` : '';
   let html = `<div class="day-head"><h2>${label}, ${fmtKey(k, { day: 'numeric', month: 'long' })}</h2><span class="sum">${sum}</span></div>`;
   if (!evs.length) {
     html += `<div class="empty"><div class="big">☀️</div><b>No classes</b>${dow(k) >= 5 ? 'Enjoy the weekend.' : 'Nothing scheduled this day.'}</div>`;
@@ -454,6 +454,16 @@ function renderMe() {
     if (state.status?.admin) { ls.set('adminKey', state.adminKey); toast('Admin unlocked'); }
     else { state.adminKey = ''; toast('Wrong admin password'); }
   };
+  const sample = $('copySample');
+  if (sample) sample.onclick = async () => {
+    try {
+      const r = await api('/api/status?raw=1');
+      if (!r.emnSample) return toast('No MyEMN data received yet');
+      const txt = `${r.emn.lastRequestUrl || ''}\n${r.emnSample}`;
+      try { await navigator.clipboard.writeText(txt); toast('Sample copied, paste it in the chat'); }
+      catch { $('view').insertAdjacentHTML('beforeend', `<textarea readonly style="width:100%;height:200px">${esc(txt)}</textarea>`); }
+    } catch (e) { toast(e.message); }
+  };
   view.querySelectorAll('[data-global]').forEach((b) => (b.onclick = async () => {
     try { await api(`/api/rules?id=${encodeURIComponent(b.dataset.global)}`, { method: 'DELETE' }); state.weeks.clear(); await loadWeek(weekStart(state.selected)); renderMe(); }
     catch (e) { toast(e.message); }
@@ -478,6 +488,7 @@ function adminSection(s) {
     <div class="copy-row"><input id="siteUrl" readonly value="${esc(location.origin)}"><button class="btn small" type="button" data-copy="siteUrl">Copy</button></div>
     <label>Sync key</label>
     <div class="copy-row"><input id="syncKey" readonly value="${esc(s.syncToken || '')}"><button class="btn small" type="button" data-copy="syncKey">Copy</button></div>
+    <button class="btn small" type="button" id="copySample" style="margin-top:12px">Copy MyEMN sample (for troubleshooting)</button>
     <h2 style="margin-top:18px">Hidden for everyone</h2>
     <div class="rows">${g.length ? g.map((r) => `<div class="rowi"><div class="t">${esc(r.label || r.value)}<small>${SCHOOL[r.source] || 'Both schools'}</small></div><button class="btn small" type="button" data-global="${esc(r.id)}">Show</button></div>`).join('') : '<p class="muted" style="margin:0">Nothing.</p>'}</div>
   </section>`;
