@@ -82,13 +82,17 @@ async function loadWeek(ws, { force = false } = {}) {
   return p;
 }
 
-let prefsTimer;
-function savePrefs() {
+let prefsTimer, pendingVisit = false, lastVisitDay = null;
+// Saves this device's choices on the server. visit=true also counts an
+// anonymous "opened the site today" for the admin's usage numbers.
+function savePrefs(visit = false) {
   ls.set('frenchGroup', state.frenchGroup);
   ls.set('myRules', state.myRules);
+  if (visit) { pendingVisit = true; lastVisitDay = today(); }
   clearTimeout(prefsTimer);
   prefsTimer = setTimeout(() => {
-    api('/api/prefs', { method: 'POST', body: JSON.stringify({ id: state.deviceId, ...prefs() }) }).catch(() => {});
+    const v = pendingVisit; pendingVisit = false;
+    api('/api/prefs', { method: 'POST', body: JSON.stringify({ id: state.deviceId, ...prefs(), visit: v }) }).catch(() => {});
   }, 300);
 }
 
@@ -134,7 +138,7 @@ function boot() {
 function startApp() {
   show('app');
   state.selected = state.selected || today();
-  savePrefs(); // keeps the phone feed in step with this device
+  savePrefs(true); // keeps the phone feed in step with this device, and counts the visit
   setTab(state.tab);
   refreshStatus();
 }
@@ -437,6 +441,7 @@ function renderMe() {
     if (state.status?.admin) { ls.set('adminKey', state.adminKey); toast('Admin unlocked'); }
     else { state.adminKey = ''; toast('Wrong admin password'); }
   };
+  if ($('usage')) loadUsage();
   const sample = $('copySample');
   if (sample) sample.onclick = async () => {
     try {
@@ -451,6 +456,26 @@ function renderMe() {
     try { await api(`/api/rules?id=${encodeURIComponent(b.dataset.global)}`, { method: 'DELETE' }); state.weeks.clear(); await loadWeek(weekStart(state.selected)); renderMe(); }
     catch (e) { toast(e.message); }
   }));
+}
+
+async function loadUsage() {
+  try {
+    const u = await api('/api/stats');
+    const max = Math.max(1, ...u.daily.map((d) => d.people));
+    const groups = Object.entries(u.groups).sort((a, b) => (a[0] === 'none') - (b[0] === 'none') || a[0] - b[0]);
+    $('usage').innerHTML = `
+      <div class="stat-row">
+        <div class="stat"><b>${u.today}</b><span>today</span></div>
+        <div class="stat"><b>${u.week}</b><span>last 7 days</span></div>
+        <div class="stat"><b>${u.month}</b><span>last 30 days</span></div>
+      </div>
+      <p class="muted" style="margin:10px 0 6px">This week: ${u.siteWeek} opened the site · ${u.feedWeek} use the phone calendar</p>
+      <div class="bars" role="img" aria-label="People per day, last 14 days">
+        ${u.daily.map((d) => `<div class="bar" title="${fmtKey(d.day, { weekday: 'short', day: 'numeric', month: 'short' })}: ${d.people} ${d.people === 1 ? 'person' : 'people'}"><span>${d.people || ''}</span><i style="height:${Math.round((d.people / max) * 72)}%"></i><small>${fmtKey(d.day, { weekday: 'narrow' })}</small></div>`).join('')}
+      </div>
+      ${groups.length ? `<p class="muted" style="margin:12px 0 0">French groups picked: ${groups.map(([g, n]) => `${g === 'none' ? 'none' : `G${g}`} × ${n}`).join(' · ')}</p>` : ''}
+      <p class="muted" style="margin:6px 0 0;font-size:13px">Counts devices, not names. Includes you.</p>`;
+  } catch (e) { $('usage').innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
 }
 
 function adminSection(s) {
@@ -472,6 +497,8 @@ function adminSection(s) {
     <label>Sync key</label>
     <div class="copy-row"><input id="syncKey" readonly value="${esc(s.syncToken || '')}"><button class="btn small" type="button" data-copy="syncKey">Copy</button></div>
     <button class="btn small" type="button" id="copySample" style="margin-top:12px">Copy MyEMN sample (for troubleshooting)</button>
+    <h2 style="margin-top:18px">Usage</h2>
+    <div id="usage"><p class="muted">Loading…</p></div>
     <h2 style="margin-top:18px">Hidden for everyone</h2>
     <div class="rows">${g.length ? g.map((r) => `<div class="rowi"><div class="t">${esc(r.label || r.value)}<small>${SCHOOL[r.source] || 'Both schools'}</small></div><button class="btn small" type="button" data-global="${esc(r.id)}">Show</button></div>`).join('') : '<p class="muted" style="margin:0">Nothing.</p>'}</div>
   </section>`;
@@ -491,6 +518,7 @@ setInterval(() => { if (!$('app').hidden && state.tab === 'day' && state.selecte
 setInterval(() => { if (!$('app').hidden && document.visibilityState === 'visible') { state.weeks.clear(); if (state.tab !== 'me') render(); } }, 15 * 60 * 1000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && !$('app').hidden) {
+    if (lastVisitDay !== today()) savePrefs(true); // app left open overnight still counts as a new day
     const w = state.weeks.get(weekStart(state.selected));
     w?.then((x) => { if (Date.now() - x.loadedAt > 10 * 60 * 1000) { state.weeks.clear(); if (state.tab !== 'me') render(); } });
   }

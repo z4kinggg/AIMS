@@ -3,6 +3,7 @@
 import * as store from '../lib/store.js';
 import { checkApp, deny } from '../lib/auth.js';
 import { FRENCH_GROUPS } from '../public/shared.js';
+import { recordVisit } from '../lib/stats.js';
 
 export const validId = (id) => typeof id === 'string' && /^[a-z0-9-]{8,64}$/.test(id);
 
@@ -20,7 +21,9 @@ export default async function handler(req, res) {
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
   if (!validId(body.id)) return res.status(400).json({ error: 'Bad id' });
   try {
-    await store.set(`prefs:${body.id}`, cleanPrefs(body));
+    const prefs = cleanPrefs(body);
+    await store.set(`prefs:${body.id}`, prefs);
+    if (body.visit) await recordVisit(body.id, prefs.frenchGroup);
     res.status(200).json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

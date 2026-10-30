@@ -5,6 +5,7 @@ import { checkFeed } from '../lib/auth.js';
 import { hiddenReason, decodePrefs, FRENCH_GROUPS } from '../public/shared.js';
 import * as store from '../lib/store.js';
 import { validId } from './prefs.js';
+import { recordFeed } from '../lib/stats.js';
 
 export default async function handler(req, res) {
   if (!checkFeed(req.query.key)) return res.status(401).send('Invalid feed link');
@@ -14,6 +15,7 @@ export default async function handler(req, res) {
     const { events } = await getCalendar({ start });
     // Personal choices: saved ones (?u=<device id>), or given in the link (?fr=<group>&h=<rules>).
     let prefs = validId(req.query.u) ? await store.get(`prefs:${req.query.u}`) : null;
+    if (validId(req.query.u)) await recordFeed(req.query.u);
     if (!prefs) {
       const fr = Number(req.query.fr);
       prefs = { frenchGroup: fr >= 1 && fr <= FRENCH_GROUPS ? fr : null, rules: decodePrefs(req.query.h) };

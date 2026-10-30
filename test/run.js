@@ -202,6 +202,15 @@ test('Whole site works end to end (public view, both schools, hiding, phone feed
     const sid = 'device-1234abcd';
     assert.equal((await fetch(`${base}/api/prefs`, { method: 'POST', headers: H, body: JSON.stringify({ id: sid, frenchGroup: 1, rules: [] }) })).status, 200);
     assert.equal((await fetch(`${base}/api/prefs`, { method: 'POST', headers: H, body: JSON.stringify({ id: '../x', frenchGroup: 1 }) })).status, 400);
+    // Usage numbers: a site visit and a phone-calendar fetch from two devices; admin only.
+    await fetch(`${base}/api/prefs`, { method: 'POST', headers: H, body: JSON.stringify({ id: sid, frenchGroup: 1, rules: [], visit: true }) });
+    await fetch(`${base}/api/prefs`, { method: 'POST', headers: H, body: JSON.stringify({ id: sid, frenchGroup: 1, rules: [], visit: true }) });
+    await fetch(`${base}/feed.ics?key=${feedToken()}&u=device-phone-only`);
+    assert.equal((await fetch(`${base}/api/stats`)).status, 403);
+    const usage = await fetch(`${base}/api/stats`, { headers: { 'x-admin-key': 'admin-password' } }).then(r => r.json());
+    assert.deepEqual([usage.today, usage.siteWeek, usage.feedWeek], [2, 1, 1]);
+    assert.equal(usage.daily.length, 14);
+    assert.equal(usage.groups['1'], 1);
     const prefs = JSON.parse(fs.readFileSync(process.env.LOCAL_STORE_FILE, 'utf8'))[`prefs:${sid}`];
     assert.equal(prefs.frenchGroup, 1);
     const st = await fetch(`${base}/api/status`, { headers: H }).then(r => r.json());
