@@ -5,15 +5,17 @@ export const FRENCH_GROUPS = 12;
 
 export const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-const FRENCH_WORD = /(^|[^a-z])(francais|french|fle)([^a-z]|$)/;
+// Classes split by French group. Tutorat uses the same group numbers ("GR3 - Tutorat …").
+const GROUP_SUBJECT = /(^|[^a-z])(francais|french|fle|tutorat|tutoring)([^a-z]|$)/;
 // "GR3", "Gr 03", "Groupe 3", "Group-3", "G3", "FR3"
 const GROUP_NUM = /(?:^|[^a-z0-9])(?:groupe?|group|gr|grp|g|fr)\s*[-_.#:]?\s*0?(\d{1,2})(?![0-9])/;
 
-// Which French group a class belongs to (1–12), or null if it is not a French group class.
+const isGroupSubject = (ev) => GROUP_SUBJECT.test([ev.title, ev.group, ev.description].map(norm).join(' \n '));
+
+// Which French group a class belongs to (1–12), or null if it is not a French or tutorat group class.
 export function frenchGroupOf(ev) {
   const fields = [ev.title, ev.group, ev.description].map(norm);
-  const all = fields.join(' \n ');
-  if (!FRENCH_WORD.test(all)) return null;
+  if (!isGroupSubject(ev)) return null;
   for (const f of fields) {
     const m = f.match(GROUP_NUM);
     if (m) {
@@ -23,6 +25,29 @@ export function frenchGroupOf(ev) {
   }
   return null;
 }
+
+const parisDay = (iso) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+
+// Zeus also lists shared blocks for the whole year group, e.g. "Tutorat & French for Fall 26 T1"
+// booked in several rooms at once. They have no group number and overlap the group classes.
+// Each one gets `sharedSlot`: the groups that have their own class that day. Those students see
+// their own class instead; a group with nothing of its own that day keeps the shared block.
+// A French class with no group and no group classes at the same time (e.g. an exam) is left alone.
+// Run this on whole days, before any date-range filtering.
+export function markSharedSlots(events) {
+  const grouped = events.map((e) => ({ e, g: frenchGroupOf(e) })).filter((x) => x.g);
+  return events.map((e) => {
+    if (!isGroupSubject(e) || frenchGroupOf(e)) return e;
+    const s = Date.parse(e.start), end = Date.parse(e.end);
+    const overlaps = grouped.some(({ e: g }) => Date.parse(g.start) < end && Date.parse(g.end) > s);
+    if (!overlaps) return e;
+    const day = parisDay(e.start);
+    const groups = [...new Set(grouped.filter(({ e: g }) => parisDay(g.start) === day).map((x) => x.g))].sort((a, b) => a - b);
+    return { ...e, sharedSlot: groups };
+  });
+}
+
+export const SHARED_SLOT = 'All groups';
 
 // Personal hide rules: { type: 'event' | 'title' | 'contains', value, source: 'any' | 'zeus' | 'emn' }
 export function matchesRule(ev, r) {
@@ -42,7 +67,8 @@ export function matchesRule(ev, r) {
 export function hiddenReason(ev, { frenchGroup = null, rules = [] } = {}) {
   if (frenchGroup) {
     const g = frenchGroupOf(ev);
-    if (g && g !== Number(frenchGroup)) return `French group ${g}`;
+    if (g && g !== Number(frenchGroup)) return `Group ${g}`;
+    if (!g && Array.isArray(ev.sharedSlot) && ev.sharedSlot.includes(Number(frenchGroup))) return SHARED_SLOT;
   }
   if (rules.some((r) => matchesRule(ev, r))) return 'Hidden by you';
   return '';

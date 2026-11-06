@@ -1,4 +1,4 @@
-import { FRENCH_GROUPS, hiddenReason, matchesRule, frenchGroupOf } from './shared.js';
+import { FRENCH_GROUPS, hiddenReason, matchesRule, frenchGroupOf, SHARED_SLOT } from './shared.js';
 
 const TZ = 'Europe/Paris';
 const SCHOOL = { zeus: 'EPITA', emn: 'EM Normandie' };
@@ -316,13 +316,15 @@ function openEvent(e) {
       <div class="fact">${ICON.clock}<div>${hhmm(e.start)} – ${hhmm(e.end)} <small>${when} · ${duration(Date.parse(e.end) - Date.parse(e.start))}</small></div></div>
       ${e.location ? `<div class="fact">${ICON.pinF}<div>${esc(e.location)}<small>Room</small></div></div>` : ''}
       ${e.teacher ? `<div class="fact">${ICON.personF}<div>${esc(e.teacher)}<small>Teacher</small></div></div>` : ''}
-      ${e.group || fg ? `<div class="fact">${ICON.group}<div>${esc(e.group || `French group ${fg}`)}<small>Group</small></div></div>` : ''}
+      ${e.group || fg ? `<div class="fact">${ICON.group}<div>${esc(e.group || `Group ${fg}`)}<small>Group</small></div></div>` : ''}
     </div>
     ${e.description ? `<div class="desc">${esc(e.description)}</div>` : ''}`;
   const actions = [];
-  if (e.reason && e.reason.startsWith('French')) {
-    html += `<div class="note">This is French group ${fg}. You're in group ${state.frenchGroup}.</div>`;
-    actions.push(['Change my French group', () => { closeSheet(); setTab('me'); }]);
+  if (e.reason && (e.reason.startsWith('Group ') || e.reason === SHARED_SLOT)) {
+    html += e.reason === SHARED_SLOT
+      ? `<div class="note">This slot covers every French and tutorat group at once. You see your group ${state.frenchGroup} classes instead.</div>`
+      : `<div class="note">This class is for group ${fg}. You're in group ${state.frenchGroup}.</div>`;
+    actions.push(['Change my group', () => { closeSheet(); setTab('me'); }]);
   } else if (e.reason) {
     actions.push(['Show this class again', () => {
       const before = state.myRules;
@@ -374,7 +376,7 @@ function renderMe() {
   view.innerHTML = `
     <section class="section">
       <h2>French group</h2>
-      <p class="muted">${state.frenchGroup ? `You see French classes for group ${state.frenchGroup} only.` : 'You see no French group filter.'}</p>
+      <p class="muted">${state.frenchGroup ? `You see French and tutorat classes for group ${state.frenchGroup} only.` : 'You see no French group filter.'}</p>
       <div class="group-grid small" id="meGroups"></div>
       <button class="btn ghost block" id="noFrench" type="button" aria-pressed="${state.frenchGroup === 0}">${state.frenchGroup === 0 ? '✓ ' : ''}I don't have French classes</button>
     </section>

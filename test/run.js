@@ -15,7 +15,7 @@ const { parseEmn, mergeEmn, rangeFromUrl } = await import('../lib/emn.js');
 const { isHidden } = await import('../lib/rules.js');
 const { buildIcs } = await import('../lib/ics.js');
 const { feedToken, syncToken } = await import('../lib/auth.js');
-const { frenchGroupOf, hiddenReason, encodePrefs, decodePrefs } = await import('../public/shared.js');
+const { frenchGroupOf, hiddenReason, encodePrefs, decodePrefs, markSharedSlots } = await import('../public/shared.js');
 
 let passed = 0;
 const tests = [];
@@ -138,14 +138,41 @@ test('Each student sees only their French group, plus their own hides', () => {
   const ev = (title, id = title) => ({ id, source: 'zeus', title, group: '', description: '' });
   const p = { frenchGroup: 3, rules: [{ type: 'title', value: 'Tutorat', source: 'any' }] };
   assert.equal(hiddenReason(ev('Français GR3'), p), '');
-  assert.equal(hiddenReason(ev('Français GR4'), p), 'French group 4');
-  assert.equal(hiddenReason(ev('Français GR10'), p), 'French group 10');
+  assert.equal(hiddenReason(ev('Français GR4'), p), 'Group 4');
+  assert.equal(hiddenReason(ev('Français GR10'), p), 'Group 10');
   assert.equal(hiddenReason(ev('Deep Learning'), p), '');
   assert.equal(hiddenReason(ev('Tutorat'), p), 'Hidden by you');
   assert.equal(hiddenReason(ev('Français GR4'), { frenchGroup: null }), '');
   const rules = [{ type: 'event', value: 'zeus:a:é', source: 'zeus' }, { type: 'contains', value: 'GR2', source: 'any' }];
   assert.deepEqual(decodePrefs(encodePrefs(rules)), rules);
   assert.deepEqual(decodePrefs('garbage!!'), []);
+});
+
+test('Tutorat follows the French group, and shared blocks hide on days the group has its own class', () => {
+  // Real Zeus titles from Thu 12 Nov (times in UTC)
+  const ev = (title, start, end) => ({ id: `${title}@${start}`, source: 'zeus', title, group: '', description: '', start: `2026-11-12T${start}:00.000Z`, end: `2026-11-12T${end}:00.000Z` });
+  const day = markSharedSlots([
+    ev('GR3 - Tutorat Fall 26 T1', '12:30', '13:30'),
+    ev('GR5 - Tutorat Fall 26 T1', '12:30', '13:30'),
+    ev('Tutorat & French for Fall 26 T1', '12:30', '15:30'),
+    ev('GR1 - French for Fall 26 T1', '13:30', '15:30'),
+    ev('GR2 - French for Spring F26 T1', '13:30', '15:30'),
+    ev('GR3 - French for Fall 26 T1', '15:30', '17:30'),
+    ev('French for Fall 26 T1', '15:30', '17:30'),
+    ev('French placement test', '08:00', '09:00'), // no group classes at that time: everyone keeps it
+    ev('GenAI 101', '08:30', '11:30'),
+  ]);
+  assert.equal(frenchGroupOf(day[0]), 3);
+  const shown = (fg) => day.filter((e) => !hiddenReason(e, { frenchGroup: fg })).map((e) => e.title);
+  assert.deepEqual(shown(3), ['GR3 - Tutorat Fall 26 T1', 'GR3 - French for Fall 26 T1', 'French placement test', 'GenAI 101']);
+  assert.deepEqual(shown(2), ['GR2 - French for Spring F26 T1', 'French placement test', 'GenAI 101']);
+  assert.equal(shown(null).length, day.length, 'no group picked: nothing is hidden');
+  assert.equal(hiddenReason(day[2], { frenchGroup: 3 }), 'All groups');
+  assert.equal(hiddenReason(day[1], { frenchGroup: 3 }), 'Group 5');
+  // Group 1 finished French at 16:30 Paris: the 16:30 shared French block is not theirs either.
+  assert.deepEqual(shown(1), ['GR1 - French for Fall 26 T1', 'French placement test', 'GenAI 101']);
+  // Group 12 has nothing of its own that day, so it keeps the shared blocks.
+  assert.deepEqual(shown(12), ['Tutorat & French for Fall 26 T1', 'French for Fall 26 T1', 'French placement test', 'GenAI 101']);
 });
 
 test('Phone calendar file is valid', () => {
